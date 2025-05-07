@@ -10,6 +10,11 @@ impl VoxState {
             step_index: 0,
         }
     }
+    
+    pub fn vox_encode(&mut self, in_sample: &i16) {
+        
+    }
+    
     pub fn vox_decode(&mut self, in_nibble: &u8) -> i16 {
         // get step size from last time's index before updating
         let step_size = VOX_STEP_TABLE[self.step_index as usize];
