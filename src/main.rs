@@ -5,7 +5,7 @@ use vox::VoxState;
 pub mod vox;
 
 fn main() {
-    let data: Vec<u8> = fs::read("input/im-afraid-not.wav").expect("Error reading file");
+    let data: Vec<u8> = fs::read("input/you-have-selected.wav").expect("Error reading file");
     
     let mut output: Vec<i16> = Vec::new();
     let mut vox_state = VoxState::new();
@@ -28,7 +28,7 @@ fn main() {
     };
     
     // writer
-    let mut writer = hound::WavWriter::create("output/im-afraid-not.wav", spec).expect("Could not create writer");
+    let mut writer = hound::WavWriter::create("output/you-have-selected.wav", spec).expect("Could not create writer");
     for t in 0..output.len() {
         writer.write_sample(output[t]).expect("Could not write sample");
     }
