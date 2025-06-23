@@ -1,6 +1,7 @@
 pub struct VoxState {
     predictor: i16,
     step_index: i16,
+    out_sample: u8,
 }
 
 impl VoxState {
@@ -8,11 +9,37 @@ impl VoxState {
         VoxState { 
             predictor: 0,
             step_index: 0,
+            out_sample: 0,
         }
     }
     
-    pub fn vox_encode(&mut self, in_sample: &i16) {
+    pub fn init(&mut self) {
+        self.predictor = 0;
+        self.step_index = 0;
+        self.out_sample = 0;
+    } 
+    
+    pub fn vox_encode(&mut self, in_sample: &i16) -> u8{
+        let mut dn = (in_sample / 16) - self.predictor;
+        let step_size = VOX_STEP_TABLE[self.step_index as usize];
+        let mut step_index = self.step_index + ADPCM_INDEX_TABLE[self.out_sample as usize];
         
+        // encoder block
+        // let mut bits: [u8; 4] = [0,0,0,0,];
+        let mut bits: u8 = 0b0000;
+        if dn < 0 { bits |= 0b1000; }
+        dn = i16::abs(dn);
+        if dn >= step_size {
+            bits |= 0b0100;
+            dn -= step_size;
+        }
+        if dn >= (step_size >> 1) {
+            bits |= 0b0010;
+            dn -= step_size >> 1;
+        }
+        if dn >= (step_size >> 2) { bits |= 0b0001; }
+        
+        bits
     }
     
     pub fn vox_decode(&mut self, in_nibble: &u8) -> i16 {
