@@ -23,7 +23,7 @@ impl AudioFilterParameters {
     pub fn new() -> AudioFilterParameters {
         AudioFilterParameters {
             algorithm: FilterAlgorithm::Hpf2,
-            fc: 35.0,
+            fc: 20.0,
             q: 0.71,
             boost_cut_db: 0.0,
         }

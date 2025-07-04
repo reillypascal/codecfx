@@ -6,10 +6,13 @@ pub mod biquad;
 pub mod vox;
 
 fn main() {
-    let data: Vec<u8> = fs::read("input/you-have-selected.wav").expect("Error reading file");
+    let data: Vec<u8> = fs::read("input/beat_1_bip_2_F_mono.wav").expect("Error reading file");
     
     let mut encoded: Vec<u8> = Vec::new();
     let mut output: Vec<i16> = Vec::new();
+
+    let mut filter = biquad::AudioFilter::new();
+    filter.calculate_filter_coeffs();
 
     let input: Vec<i16> = data.chunks_exact(2)
         .map(|chunks| {
@@ -25,7 +28,8 @@ fn main() {
     }
 
     for sample in encoded {
-        output.push(vox.vox_decode(&sample));
+        let decoded = vox.vox_decode(&sample);
+        output.push(filter.process_sample(decoded as f64) as i16);
     }
     
     // write WAV file
@@ -38,7 +42,7 @@ fn main() {
     };
     
     // writer
-    let mut writer = hound::WavWriter::create("output/you-have-selected.wav", spec).expect("Could not create writer");
+    let mut writer = hound::WavWriter::create("output/output.wav", spec).expect("Could not create writer");
     for t in 0..output.len() {
         writer.write_sample(output[t]).expect("Could not write sample");
     }
