@@ -22,12 +22,9 @@ fn main() {
         encoded.push(vox.vox_encode(&sample));
     }
 
-    for i in 0..encoded.len() {
-        for nibble in [(encoded[i] >> 4) & 0xf, encoded[i] & 0xf].iter() {
-            // vox output is 12-bit, from i16::MIN <-> i16::MAX/2
-            // *don't* shift — changes spectrum, envelope!
-            output.push(vox.vox_decode(nibble));
-        }
+    for sample in encoded {
+        output.push(vox.vox_decode(&sample));
+        
     }
     
     // write WAV file

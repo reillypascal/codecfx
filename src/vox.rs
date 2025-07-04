@@ -59,9 +59,22 @@ impl Vox {
         if diff >= (step_size >> 2) { 
             bits |= 0b0001; 
         }
-        
-        self.encode_state.predictor = self.vox_decode(&bits);
+        // decode block from self.vox_decode, NOT full function
+        // sign is 4th bit; magnitude is 3 LSBs
+        let sign = bits & 0b1000;
+        let magnitude = bits & 0b0111;
+        // magnitude; after * 2 and >> 3, equivalent to scale of 3 bits in (ss(n)*B2)+(ss(n)/2*B1)+(ss(n)/4*BO) from pseudocode
+        // + 1: after >> 3, corresponds to ss(n)/8 from pseudocode — bit always multiplies step, regardless of 3 magnitude bits on/off
+        let mut delta = ((2 * (magnitude as i16) + 1) * step_size) >> 3;
+        // last time's value
+        let mut predictor = self.encode_state.predictor;
+        // if sign bit (4th one) is set, value is negative
+        if sign != 0 { delta *= -1; }
+        predictor += delta;
+
+        self.encode_state.predictor = predictor; 
         self.encode_state.step_index = step_index;
+        self.encode_state.out_sample = bits;
 
         bits
     }
