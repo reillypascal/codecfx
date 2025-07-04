@@ -1,11 +1,11 @@
-pub struct VoxState {
+struct VoxState {
     predictor: i16,
     step_index: i16,
     out_sample: u8,
 }
 
 impl VoxState {
-    pub fn new() -> VoxState {
+    fn new() -> VoxState {
         VoxState { 
             predictor: 0,
             step_index: 0,
@@ -13,12 +13,11 @@ impl VoxState {
         }
     }
 
-    pub fn init(&mut self) {
-        self.predictor = 0;
-        self.step_index = 0;
-        self.out_sample = 0;
-    } 
-
+//    fn init(&mut self) {
+//        self.predictor = 0;
+//        self.step_index = 0;
+//        self.out_sample = 0;
+//    } 
 }
 
 pub struct Vox {
@@ -35,14 +34,16 @@ impl Vox {
     }
        
     pub fn vox_encode(&mut self, in_sample: &i16) -> u8 {
+        // calculate differene btwn last time/this; divide by 16 because we're working at 12
+        // bits
         let mut diff = (in_sample / 16) - self.encode_state.predictor;
-        
+        // step size for this time
         let step_size = VOX_STEP_TABLE[self.encode_state.step_index as usize];
-        
+        // step index to use for next time
         let mut step_index = self.encode_state.step_index + ADPCM_INDEX_TABLE[self.encode_state.out_sample as usize];
         step_index = i16::clamp(step_index, 0, (VOX_STEP_TABLE.len() as i16) - 1);
         
-        // encoder block
+        // encoder block based on pseudocode in spec
         let mut bits: u8 = 0b0000;
         if diff < 0 { 
             bits |= 0b1000; 
@@ -59,12 +60,12 @@ impl Vox {
         if diff >= (step_size >> 2) { 
             bits |= 0b0001; 
         }
+
         // decode block from self.vox_decode, NOT full function
         // sign is 4th bit; magnitude is 3 LSBs
         let sign = bits & 0b1000;
         let magnitude = bits & 0b0111;
-        // magnitude; after * 2 and >> 3, equivalent to scale of 3 bits in (ss(n)*B2)+(ss(n)/2*B1)+(ss(n)/4*BO) from pseudocode
-        // + 1: after >> 3, corresponds to ss(n)/8 from pseudocode — bit always multiplies step, regardless of 3 magnitude bits on/off
+        // calculate difference based on pseudocode in spec
         let mut delta = ((2 * (magnitude as i16) + 1) * step_size) >> 3;
         // last time's value
         let mut predictor = self.encode_state.predictor;
@@ -72,10 +73,12 @@ impl Vox {
         if sign != 0 { delta *= -1; }
         predictor += delta;
 
+        // push values into z^-1 delays
         self.encode_state.predictor = predictor; 
         self.encode_state.step_index = step_index;
         self.encode_state.out_sample = bits;
 
+        // return vox sample
         bits
     }
     
