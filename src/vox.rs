@@ -1,3 +1,5 @@
+//use crate::biquad;
+
 struct VoxState {
     predictor: i16,
     step_index: i16,
@@ -23,6 +25,8 @@ impl VoxState {
 pub struct Vox {
     encode_state: VoxState,
     decode_state: VoxState,
+    //encode_filter: biquad::AudioFilter,
+    //decode_filter: biquad::AudioFilter,
 }
 
 impl Vox {
@@ -30,6 +34,8 @@ impl Vox {
         Vox {
             encode_state: VoxState::new(),
             decode_state: VoxState::new(),
+            //encode_filter: biquad::AudioFilter::new(),
+            //decode_filter: biquad::AudioFilter::new(),
         }
     }
        
@@ -73,8 +79,12 @@ impl Vox {
         if sign != 0 { delta *= -1; }
         predictor += delta;
 
+        // filter predictor
+        // predictor = self.encode_filter.process_sample((predictor as f64) / 16.0) as i16;
+
         // push values into z^-1 delays
-        self.encode_state.predictor = predictor; 
+        self.encode_state.predictor = i16::clamp(predictor, -i16::pow(2, 11), i16::pow(2, 11) - 1);
+
         self.encode_state.step_index = step_index;
         self.encode_state.out_sample = bits;
 
@@ -101,6 +111,9 @@ impl Vox {
         // if sign bit (4th one) is set, value is negative
         if sign != 0 { delta *= -1; }
         predictor += delta;
+
+        // filter predictor
+        //predictor = self.decode_filter.process_sample(predictor as f64) as i16;
 
         // clamp output between 12-bit signed min/max value
         self.decode_state.predictor = i16::clamp(predictor, -i16::pow(2, 11), i16::pow(2, 11) - 1);

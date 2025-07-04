@@ -2,6 +2,7 @@ use std::fs;
 use hound;
 use vox::Vox;
 
+pub mod biquad;
 pub mod vox;
 
 fn main() {
@@ -10,13 +11,14 @@ fn main() {
     let mut encoded: Vec<u8> = Vec::new();
     let mut output: Vec<i16> = Vec::new();
 
-    let mut vox = Vox::new();
-    
     let input: Vec<i16> = data.chunks_exact(2)
         .map(|chunks| {
             i16::from_le_bytes(chunks.try_into().expect("Could not convert file into 16-bit Vec"))
         })
         .collect();
+    
+    // Vox encode/decode
+    let mut vox = Vox::new();
 
     for sample in input {
         encoded.push(vox.vox_encode(&sample));
@@ -24,7 +26,6 @@ fn main() {
 
     for sample in encoded {
         output.push(vox.vox_decode(&sample));
-        
     }
     
     // write WAV file
