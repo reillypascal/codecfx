@@ -28,10 +28,14 @@ fn main() {
     }
 
     for sample in encoded {
-        let decoded = vox.vox_decode(&sample);
-        output.push(filter.process_sample(decoded as f64) as i16);
+        output.push(vox.vox_decode(&sample));
     }
     
+    // filter
+    for i in 0..output.len() {
+        output[i] = filter.process_sample(output[i] as f64) as i16;
+    }
+
     // write WAV file
     // spec
     let spec = hound::WavSpec {
