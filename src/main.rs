@@ -1,20 +1,32 @@
 use std::fs;
 use hound;
-use vox::VoxState;
+use vox::Vox;
 
 pub mod vox;
 
 fn main() {
     let data: Vec<u8> = fs::read("input/you-have-selected.wav").expect("Error reading file");
     
+    let mut encoded: Vec<u8> = Vec::new();
     let mut output: Vec<i16> = Vec::new();
-    let mut vox_state = VoxState::new();
+
+    let mut vox = Vox::new();
     
-    for i in 0..data.len() {
-        for nibble in [(data[i] >> 4) & 0xf, data[i] & 0xf].iter() {
+    let input: Vec<i16> = data.chunks_exact(2)
+        .map(|chunks| {
+            i16::from_le_bytes(chunks.try_into().expect("Could not convert file into 16-bit Vec"))
+        })
+        .collect();
+
+    for sample in input {
+        encoded.push(vox.vox_encode(&sample));
+    }
+
+    for i in 0..encoded.len() {
+        for nibble in [(encoded[i] >> 4) & 0xf, encoded[i] & 0xf].iter() {
             // vox output is 12-bit, from i16::MIN <-> i16::MAX/2
             // *don't* shift — changes spectrum, envelope!
-            output.push(vox_state.vox_decode(nibble));
+            output.push(vox.vox_decode(nibble));
         }
     }
     
