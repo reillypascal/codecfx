@@ -11,7 +11,11 @@ pub mod biquad;
 pub mod vox;
 
 fn main() {
-    WalkDir::new("input/")
+    // -------- CLI ARGS --------
+    let args = Args::parse();
+
+    // -------- GET & PROCESS FILES --------
+    WalkDir::new(&args.input)
         .into_iter()
         .filter_map(|entry| entry.ok())
         .for_each(|entry| {
@@ -24,30 +28,37 @@ fn main() {
                 
                     let mut filter = biquad::AudioFilter::new();
                     filter.calculate_filter_coeffs();
-                
-                    let input: Vec<i16> = data.chunks_exact(2)
-                        .map(|chunks| {
-                            i16::from_le_bytes(chunks.try_into().expect("Could not convert file into 16-bit Vec"))
-                        })
-                        .collect();
                     
-                    // Vox encode/decode
-                    let mut vox = Vox::new();
-                
-                    for sample in input {
-                        encoded.push(vox.vox_encode(&sample));
+                    // -------- CHOOSE CODEC --------
+                    match args.format {
+                        CodecChoice::Vox => {
+                            // VOX
+                            let input: Vec<i16> = data.chunks_exact(2)
+                                .map(|chunks| {
+                                    i16::from_le_bytes(chunks.try_into().expect("Could not convert file into 16-bit Vec"))
+                                })
+                                .collect();
+
+                            // Vox encode/decode
+                            let mut vox = Vox::new();
+                        
+                            for sample in input {
+                                encoded.push(vox.vox_encode(&sample));
+                            }
+                        
+                            for sample in encoded {
+                                output.push(vox.vox_decode(&sample));
+                            }
+                        },
+                        CodecChoice::Gsm => {},
                     }
-                
-                    for sample in encoded {
-                        output.push(vox.vox_decode(&sample));
-                    }
-                    
-                    // filter
+
+                    // -------- FILTER --------
                     for i in 0..output.len() {
                         output[i] = filter.process_sample(output[i] as f64) as i16;
                     }
                 
-                    let mut write_path = PathBuf::from("output/");
+                    let mut write_path = PathBuf::from(&args.output);
                     
                     if let Some(file_name) = entry.path().file_name() {
                         write_path.push(file_name);
@@ -70,4 +81,23 @@ fn main() {
                 }
             }
     });
+}
+
+// -------- CLI PARSER --------
+#[derive(Parser, Debug)]
+struct Args {
+    #[arg(short = 'i', long, default_value_t = String::from("input"))]
+    input: String,
+
+    #[arg(short = 'o', long, default_value_t = String::from("output"))]
+    output: String,
+
+    #[clap(short = 'f', long, value_enum, default_value_t=CodecChoice::Vox)]
+    format: CodecChoice,
+}
+
+#[derive(ValueEnum, Clone, Debug)]
+enum CodecChoice {
+    Vox,
+    Gsm,
 }
