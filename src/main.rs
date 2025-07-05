@@ -1,4 +1,5 @@
 use std::fs;
+use std::ffi::OsStr;
 use std::path::{self, PathBuf};
 
 use clap::{Parser, ValueEnum};
@@ -20,8 +21,9 @@ fn main() {
         .filter_map(|entry| entry.ok())
         .for_each(|entry| {
             if let Ok(metadata) = entry.metadata() {
-                if metadata.is_file() {        
-                    let data: Vec<u8> = fs::read(entry.path()).expect("Error reading file");
+                if metadata.is_file() && match_ext(&entry, "wav") {
+                    let mut reader = hound::WavReader::open(entry.path()).expect("Error reading file");
+                    let input = reader.samples::<i16>();
                     
                     let mut encoded: Vec<u8> = Vec::new();
                     let mut output: Vec<i16> = Vec::new();
@@ -32,23 +34,17 @@ fn main() {
                     // -------- CHOOSE CODEC --------
                     match args.format {
                         CodecChoice::Vox => {
-                            // VOX
-                            let input: Vec<i16> = data.chunks_exact(2)
-                                .map(|chunks| {
-                                    i16::from_le_bytes(chunks.try_into().expect("Could not convert file into 16-bit Vec"))
-                                })
-                                .collect();
-
                             // Vox encode/decode
                             let mut vox = Vox::new();
                         
-                            for sample in input {
-                                encoded.push(vox.vox_encode(&sample));
-                            }
-                        
-                            for sample in encoded {
+                            // for sample in input
+                            input.for_each(|sample| {
+                                encoded.push(vox.vox_encode(&sample.expect("Zrror reading sample")));
+                            });
+                            // could do as for in; reader works well w/ for_each(), so doing similar here
+                            encoded.iter().for_each(|sample| {
                                 output.push(vox.vox_decode(&sample));
-                            }
+                            });
                         },
                         CodecChoice::Gsm => {},
                     }
@@ -100,4 +96,9 @@ struct Args {
 enum CodecChoice {
     Vox,
     Gsm,
+}
+
+// -------- HELPER FNS --------
+fn match_ext(file: &walkdir::DirEntry, ext: &str) -> bool {
+    file.path().extension().and_then(OsStr::to_str).map(|e| e == ext).unwrap_or(false)
 }
