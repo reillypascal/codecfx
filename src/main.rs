@@ -57,24 +57,9 @@ fn main() {
                 // -------- WRITE FILE --------
                 let mut write_path = PathBuf::from(&args.output);
                 
-                if let Some(file_name) = entry.path().file_name() {
-                    write_path.push(file_name);
-                    // write WAV file
-                    // spec
-                    let spec = hound::WavSpec {
-                        channels: 1,
-                        sample_rate: 44100,
-                        bits_per_sample: 16,
-                        sample_format: hound::SampleFormat::Int,
-                    };
-                    
-                    // writer
-                    let mut writer = hound::WavWriter::create(write_path, spec).expect("Could not create writer");
-                    for t in 0..output.len() {
-                        writer.write_sample(output[t]).expect("Could not write sample");
-                    }
-                    writer.finalize().expect("Could not finalize WAV file");
-                }
+                if let Some(file_name) = entry.path().file_name() { write_path.push(file_name); }
+                
+                write_file_as_wav(&output, &write_path, &args.samplerate);
             }
     });
 }
@@ -87,6 +72,9 @@ struct Args {
 
     #[arg(short = 'o', long, default_value_t = String::from("output"))]
     output: String,
+    
+    #[arg(short = 's', long, default_value_t = 44100)]
+    samplerate: u32,
 
     #[clap(short = 'f', long, value_enum, default_value_t=CodecChoice::Vox)]
     format: CodecChoice,
@@ -101,4 +89,22 @@ enum CodecChoice {
 // -------- HELPER FNS --------
 fn match_ext(file: &walkdir::DirEntry, ext: &str) -> bool {
     file.path().extension().and_then(OsStr::to_str).map(|e| e == ext).unwrap_or(false)
+}
+
+fn write_file_as_wav(data: &Vec<i16>, path: &PathBuf, sample_rate: &u32) {
+    // write WAV file
+    // spec
+    let spec = hound::WavSpec {
+        channels: 1,
+        sample_rate: *sample_rate,
+        bits_per_sample: 16,
+        sample_format: hound::SampleFormat::Int,
+    };
+    
+    // writer
+    let mut writer = hound::WavWriter::create(path, spec).expect("Could not create writer");
+    for t in 0..data.len() {
+        writer.write_sample(data[t]).expect("Could not write sample");
+    }
+    writer.finalize().expect("Could not finalize WAV file");
 }
