@@ -1,6 +1,6 @@
-use std::fs;
+// use std::fs;
 use std::ffi::OsStr;
-use std::path::{self, PathBuf};
+use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum};
 use hound;
@@ -20,60 +20,60 @@ fn main() {
         .into_iter()
         .filter_map(|entry| entry.ok())
         .for_each(|entry| {
-            if let Ok(metadata) = entry.metadata() {
-                if metadata.is_file() && match_ext(&entry, "wav") {
-                    let mut reader = hound::WavReader::open(entry.path()).expect("Error reading file");
-                    let input = reader.samples::<i16>();
-                    
-                    let mut encoded: Vec<u8> = Vec::new();
-                    let mut output: Vec<i16> = Vec::new();
+            // can do let chains in Rust 1.88
+            if let Ok(metadata) = entry.metadata() && metadata.is_file() && match_ext(&entry, "wav") {
+                // -------- READ FILE --------
+                let mut reader = hound::WavReader::open(entry.path()).expect("Error reading file");
+                let input: Vec<i16> = reader.samples::<i16>().map(|s| s.expect("Could not read sample")).collect();
+                let mut output: Vec<i16> = Vec::new();
                 
-                    let mut filter = biquad::AudioFilter::new();
-                    filter.calculate_filter_coeffs();
-                    
-                    // -------- CHOOSE CODEC --------
-                    match args.format {
-                        CodecChoice::Vox => {
-                            // Vox encode/decode
-                            let mut vox = Vox::new();
+                // -------- CHOOSE/APPLY CODEC --------
+                match args.format {
+                    CodecChoice::Vox => {
+                        // Vox encode/decode
+                        let mut vox = Vox::new();
+                        let mut encoded: Vec<u8> = Vec::new();
                         
-                            // for sample in input
-                            input.for_each(|sample| {
-                                encoded.push(vox.vox_encode(&sample.expect("Zrror reading sample")));
-                            });
-                            // could do as for in; reader works well w/ for_each(), so doing similar here
-                            encoded.iter().for_each(|sample| {
-                                output.push(vox.vox_decode(&sample));
-                            });
-                        },
-                        CodecChoice::Gsm => {},
-                    }
-
-                    // -------- FILTER --------
-                    for i in 0..output.len() {
-                        output[i] = filter.process_sample(output[i] as f64) as i16;
-                    }
-                
-                    let mut write_path = PathBuf::from(&args.output);
-                    
-                    if let Some(file_name) = entry.path().file_name() {
-                        write_path.push(file_name);
-                        // write WAV file
-                        // spec
-                        let spec = hound::WavSpec {
-                            channels: 1,
-                            sample_rate: 44100,
-                            bits_per_sample: 16,
-                            sample_format: hound::SampleFormat::Int,
+                        // encode
+                        for sample in input {
+                            encoded.push(vox.vox_encode(&sample));
                         };
-                        
-                        // writer
-                        let mut writer = hound::WavWriter::create(write_path, spec).expect("Could not create writer");
-                        for t in 0..output.len() {
-                            writer.write_sample(output[t]).expect("Could not write sample");
-                        }
-                        writer.finalize().expect("Could not finalize WAV file");
+                        // decode
+                        for sample in encoded {
+                            output.push(vox.vox_decode(&sample));
+                        };
+                    },
+                    CodecChoice::Gsm => {},
+                }
+
+                // -------- FILTER --------
+                let mut filter = biquad::AudioFilter::new();
+                filter.calculate_filter_coeffs();
+                
+                for i in 0..output.len() {
+                    output[i] = filter.process_sample(output[i] as f64) as i16;
+                }
+            
+                // -------- WRITE FILE --------
+                let mut write_path = PathBuf::from(&args.output);
+                
+                if let Some(file_name) = entry.path().file_name() {
+                    write_path.push(file_name);
+                    // write WAV file
+                    // spec
+                    let spec = hound::WavSpec {
+                        channels: 1,
+                        sample_rate: 44100,
+                        bits_per_sample: 16,
+                        sample_format: hound::SampleFormat::Int,
+                    };
+                    
+                    // writer
+                    let mut writer = hound::WavWriter::create(write_path, spec).expect("Could not create writer");
+                    for t in 0..output.len() {
+                        writer.write_sample(output[t]).expect("Could not write sample");
                     }
+                    writer.finalize().expect("Could not finalize WAV file");
                 }
             }
     });
