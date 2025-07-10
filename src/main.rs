@@ -1,6 +1,6 @@
 // use std::fs;
 use std::ffi::OsStr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use clap::{Parser, ValueEnum};
 use hound;
@@ -23,8 +23,7 @@ fn main() {
             // can do let chains in Rust 1.88
             if let Ok(metadata) = entry.metadata() && metadata.is_file() && match_ext(&entry, "wav") {
                 // -------- READ FILE --------
-                let mut reader = hound::WavReader::open(entry.path()).expect("Error reading file");
-                let input: Vec<i16> = reader.samples::<i16>().map(|s| s.expect("Could not read sample")).collect();
+                let input = read_file_as_wav(entry.path());
                 let mut output: Vec<i16> = Vec::new();
                 
                 // -------- CHOOSE/APPLY CODEC --------
@@ -89,6 +88,13 @@ enum CodecChoice {
 // -------- HELPER FNS --------
 fn match_ext(file: &walkdir::DirEntry, ext: &str) -> bool {
     file.path().extension().and_then(OsStr::to_str).map(|e| e == ext).unwrap_or(false)
+}
+
+fn read_file_as_wav(path: &Path) -> Vec<i16> {
+    let mut reader = hound::WavReader::open(path).expect("Error reading file");
+    let input: Vec<i16> = reader.samples::<i16>().map(|s| s.expect("Could not read sample")).collect();
+    
+    input
 }
 
 fn write_file_as_wav(data: &Vec<i16>, path: &PathBuf, sample_rate: &u32) {
