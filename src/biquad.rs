@@ -20,12 +20,12 @@ pub struct AudioFilterParameters {
 }
 
 impl AudioFilterParameters {
-    pub fn new() -> AudioFilterParameters {
+    pub fn new(algorithm: FilterAlgorithm, fc: f64, q: f64, boost_cut_db: f64) -> AudioFilterParameters {
         AudioFilterParameters {
-            algorithm: FilterAlgorithm::Hpf2,
-            fc: 20.0,
-            q: 0.71,
-            boost_cut_db: 0.0,
+            algorithm: algorithm,
+            fc: fc,
+            q: q,
+            boost_cut_db: boost_cut_db,
         }
     }
 }
@@ -42,7 +42,7 @@ impl Biquad {
             state_array: vec![0.0; 4],
         }
     }
-    pub fn reset() {}
+    pub fn reset(&mut self) { self.state_array = vec![0.0; 4]; }
     
     pub fn process_sample(&mut self, xn: f64) -> f64 {
         // canonical form only
@@ -61,15 +61,15 @@ impl Biquad {
 pub struct AudioFilter {
     parameters: AudioFilterParameters,
     biquad: Biquad,
-    sample_rate: f64,
+    sample_rate: u32,
 }
 
 impl AudioFilter {
-    pub fn new() -> AudioFilter {
+    pub fn new(algorithm: FilterAlgorithm, fc: f64, q: f64, boost_cut_db: f64, sample_rate: u32) -> AudioFilter {
         AudioFilter {
-            parameters: AudioFilterParameters::new(),
+            parameters: AudioFilterParameters::new(algorithm, fc, q, boost_cut_db),
             biquad: Biquad::new(),
-            sample_rate: 44100.0,
+            sample_rate: sample_rate,
         }
     }
     
@@ -87,18 +87,29 @@ impl AudioFilter {
         self.calculate_filter_coeffs();
     }
     
-    pub fn reset(&self) {}
+    pub fn reset(&mut self) { self.biquad.reset(); }
     
     pub fn process_sample(&mut self, xn: f64) -> f64 {
         self.biquad.coeff_array[6] * xn + self.biquad.coeff_array[5] * self.biquad.process_sample(xn)
     }
     
-    pub fn set_sample_rate(&mut self, sample_rate: f64) {
+    pub fn process_vec(&mut self, mut input: Vec<f64>) -> Vec<f64>
+    {
+        self.calculate_filter_coeffs();
+        
+        for i in 0..input.len() {
+            input[i] = self.process_sample(input[i]);
+        }
+        
+        input
+    }
+    
+    pub fn set_sample_rate(&mut self, sample_rate: u32) {
         self.sample_rate = sample_rate;
     }
     
     pub fn calculate_filter_coeffs(&mut self) {
-        self .biquad.coeff_array.fill(0.0);
+        self.biquad.coeff_array.fill(0.0);
         
         self.biquad.coeff_array[0] = 1.0; // a0
         self.biquad.coeff_array[5] = 1.0; // c0
@@ -109,7 +120,7 @@ impl AudioFilter {
         let q = self.parameters.q;
         
         if filter_algorithm == FilterAlgorithm::Hpf2 {
-            let theta_c = (2.0 * PI * fc) / self.sample_rate;
+            let theta_c = (2.0 * PI * fc) / self.sample_rate as f64;
             let d = 1.0 / q;
             
             let beta_numerator = 1.0 - (d/2.0) * f64::sin(theta_c);
