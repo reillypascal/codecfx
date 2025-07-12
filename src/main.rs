@@ -36,7 +36,13 @@ fn main() {
             filter.calculate_filter_coeffs();
             
             // read file
-            let input = read_file_as_wav(entry.path());
+            let mut input: Vec<i16> = Vec::new();
+            // will both (try to) read the file and match the result, printing if there is an error
+            match read_file_as_wav(entry.path()) {
+                Ok(file) => { input = file; },
+                Err(e) => { eprintln!("Error reading {:?} as .WAV file: {}", entry.path(), e); },
+            };
+            
             // apply codec
             let mut output = process_codec(input, &args.format);
             // apply filter
@@ -48,8 +54,12 @@ fn main() {
             let mut write_path = PathBuf::from(&args.output);
             
             if let Some(file_name) = entry.path().file_name() { 
-                write_path.push(file_name); 
-                write_file_as_wav(&output, &write_path, &args.samplerate);
+                write_path.push(file_name);
+                // will both (try to) write the file and match the result, printing if there is an error
+                match write_file_as_wav(&output, &write_path, &args.samplerate) {
+                    Ok(_) => {},
+                    Err(e) => { eprintln!("Error writing {:?} as .WAV file: {}", entry.path(), e); },
+                };
             }
         });
 }
