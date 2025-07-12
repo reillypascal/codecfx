@@ -4,13 +4,13 @@ use std::path::PathBuf;
 use clap::Parser;
 use walkdir::WalkDir;
 
-use crate::biquad::AudioFilter;
-use crate::codec_processor::process_codec;
+use crate::biquad::{AudioFilter, FilterAlgorithm};
+use crate::codec::process_codec;
 use crate::wav::{read_file_as_wav, write_file_as_wav};
 
 pub mod biquad;
 pub mod cli;
-pub mod codec_processor;
+pub mod codec;
 pub mod vox;
 pub mod wav;
 
@@ -31,26 +31,27 @@ fn main() {
             }
         })
         .for_each(|entry| {
-            // -------- MAKE FILTER --------
-            let mut filter = AudioFilter::new(biquad::FilterAlgorithm::Hpf2, 20.0, 0.707, 0.0, args.samplerate);
+            // make filter, calculate coeffs
+            let mut filter = AudioFilter::new(FilterAlgorithm::Hpf2, 20.0, 0.707, 0.0, args.samplerate);
+            filter.calculate_filter_coeffs();
             
-            // -------- READ FILE & PROCESS --------
+            // read file
             let input = read_file_as_wav(entry.path());
-            
+            // apply codec
             let mut output = process_codec(input, &args.format);
-            
+            // apply filter
             for sample in &mut output {
                 *sample = filter.process_sample(*sample as f64) as i16;
             }
             
-            // -------- WRITE FILE --------
+            // make write path and write .WAV file
             let mut write_path = PathBuf::from(&args.output);
             
             if let Some(file_name) = entry.path().file_name() { 
                 write_path.push(file_name); 
                 write_file_as_wav(&output, &write_path, &args.samplerate);
             }
-    });
+        });
 }
 
 // -------- HELPER FNS --------

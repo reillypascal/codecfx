@@ -95,8 +95,6 @@ impl AudioFilter {
     
     pub fn process_vec(&mut self, mut input: Vec<f64>) -> Vec<f64>
     {
-        self.calculate_filter_coeffs();
-        
         for i in 0..input.len() {
             input[i] = self.process_sample(input[i]);
         }

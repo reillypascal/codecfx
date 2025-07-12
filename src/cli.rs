@@ -1,4 +1,5 @@
 use clap::{Parser, ValueEnum};
+
 // -------- CLI PARSER --------
 #[derive(Parser, Debug)]
 pub struct Args {
