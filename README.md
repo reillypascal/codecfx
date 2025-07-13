@@ -17,12 +17,12 @@ The code will default to expecting your input file(s) and/or folder(s) to be in 
 ### Usage Examples
 - Note the extra two dashes (`--`) between `cargo run` and the command-line options. This sends your options to the running program, rather than to cargo.
 
-- Only accept files 1MB or larger; read as unsigned 8-bit integer values
+- run codec at 8 kHz; use the 'vox' codec 
 ```sh
-cargo run -- -S 8000 -f 'vox'
+cargo run -- -s 8000 -f 'vox'
 ```
 
-- Read files from the `data` subfolder and output them to the code folder, rather than a subfolder
+- Read files from the `samples` subfolder and output them to the code folder, rather than a subfolder
 ```sh
 cargo run -- -i "samples" -o "."
 ```
