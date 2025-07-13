@@ -6,23 +6,29 @@ struct VoxState {
 
 impl VoxState {
     fn new() -> VoxState {
-        VoxState { 
+        VoxState {
             predictor: 0,
             step_index: 0,
             out_sample: 0,
         }
     }
 
-//    fn init(&mut self) {
-//        self.predictor = 0;
-//        self.step_index = 0;
-//        self.out_sample = 0;
-//    } 
+    //    fn init(&mut self) {
+    //        self.predictor = 0;
+    //        self.step_index = 0;
+    //        self.out_sample = 0;
+    //    }
 }
 
 pub struct Vox {
     encode_state: VoxState,
     decode_state: VoxState,
+}
+
+impl Default for Vox {
+    fn default() -> Self {
+        Vox::new()
+    }
 }
 
 impl Vox {
@@ -32,7 +38,7 @@ impl Vox {
             decode_state: VoxState::new(),
         }
     }
-     
+
     pub fn vox_encode(&mut self, in_sample: &i16) -> u8 {
         // calculate differece btwn last time/this; divide by 16 because we're working at 12
         // bits
@@ -40,13 +46,14 @@ impl Vox {
         // step size for this time
         let step_size = VOX_STEP_TABLE[self.encode_state.step_index as usize];
         // step index to use for next time
-        let mut step_index = self.encode_state.step_index + ADPCM_INDEX_TABLE[self.encode_state.out_sample as usize];
+        let mut step_index =
+            self.encode_state.step_index + ADPCM_INDEX_TABLE[self.encode_state.out_sample as usize];
         step_index = i16::clamp(step_index, 0, (VOX_STEP_TABLE.len() as i16) - 1);
-        
+
         // encoder block based on pseudocode in spec
         let mut bits: u8 = 0b0000;
-        if diff < 0 { 
-            bits |= 0b1000; 
+        if diff < 0 {
+            bits |= 0b1000;
         }
         diff = i16::abs(diff);
         if diff >= step_size {
@@ -57,8 +64,8 @@ impl Vox {
             bits |= 0b0010;
             diff -= step_size >> 1;
         }
-        if diff >= (step_size >> 2) { 
-            bits |= 0b0001; 
+        if diff >= (step_size >> 2) {
+            bits |= 0b0001;
         }
 
         // decode block from self.vox_decode, NOT full function
@@ -70,7 +77,9 @@ impl Vox {
         // last time's value
         let mut predictor = self.encode_state.predictor;
         // if sign bit (4th one) is set, value is negative
-        if sign != 0 { delta *= -1; }
+        if sign != 0 {
+            delta *= -1;
+        }
         predictor += delta;
 
         // push values into z^-1 delays
@@ -82,7 +91,7 @@ impl Vox {
         // return vox sample
         bits
     }
-    
+
     pub fn vox_decode(&mut self, in_nibble: &u8) -> i16 {
         // get step size from last time's index before updating
         let step_size = VOX_STEP_TABLE[self.decode_state.step_index as usize];
@@ -100,7 +109,9 @@ impl Vox {
         // last time's value
         let mut predictor = self.decode_state.predictor;
         // if sign bit (4th one) is set, value is negative
-        if sign != 0 { delta *= -1; }
+        if sign != 0 {
+            delta *= -1;
+        }
         predictor += delta;
 
         // clamp output between 12-bit signed min/max value
@@ -114,14 +125,10 @@ impl Vox {
 }
 // duplicate values from spec; can index w/ whole nibble, incl sign bit (4th)
 // increment up/down thru this table...
-const ADPCM_INDEX_TABLE: [i16; 16] = [
-    -1, -1, -1, -1, 2, 4, 6, 8,
-    -1, -1, -1, -1, 2, 4, 6, 8,
-];
+const ADPCM_INDEX_TABLE: [i16; 16] = [-1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8];
 // ...use (clamped) index table to index this array for step size
 const VOX_STEP_TABLE: [i16; 49] = [
-    16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45,
-    50, 55, 60, 66, 73, 80, 88, 97, 107, 118, 130, 143, 
-    157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449, 
-    494, 544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552,
+    16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66, 73, 80, 88, 97, 107, 118, 130,
+    143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449, 494, 544, 598, 658, 724, 796,
+    876, 963, 1060, 1166, 1282, 1411, 1552,
 ];

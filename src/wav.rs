@@ -1,5 +1,5 @@
-use std::path::{Path, PathBuf};
 use hound::{self, WavSpec};
+use std::path::{Path, PathBuf};
 
 pub fn read_file_as_wav(path: &Path) -> Result<Vec<i16>, hound::Error> {
     // // reader
@@ -13,14 +13,14 @@ pub fn read_file_as_wav(path: &Path) -> Result<Vec<i16>, hound::Error> {
     // return
     Ok(input)
 }
-
-pub fn write_file_as_wav(data: &Vec<i16>, path: &PathBuf, spec: &WavSpec) -> Result<(), hound::Error> {
+// &[i16] instead of &Vec<i16> - https://rust-lang.github.io/rust-clippy/master/index.html#ptr_arg
+pub fn write_file_as_wav(data: &[i16], path: &PathBuf, spec: &WavSpec) -> Result<(), hound::Error> {
     // writer
-    let mut writer = hound::WavWriter::create(path, *spec)?;//.expect("Could not create writer");
-    for t in 0..data.len() {
-        writer.write_sample(data[t])?;//.expect("Could not write sample");
+    let mut writer = hound::WavWriter::create(path, *spec)?; //.expect("Could not create writer");
+    for sample in data {
+        writer.write_sample(*sample)?; //.expect("Could not write sample");
     }
-    writer.finalize()?;//.expect("Could not finalize WAV file");
-    
+    writer.finalize()?; //.expect("Could not finalize WAV file");
+
     Ok(())
 }
