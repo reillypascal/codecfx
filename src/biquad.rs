@@ -41,6 +41,7 @@ pub struct Biquad {
 }
 
 // see https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default
+// The user might expect to be able to use Default as the type can be constructed without arguments.
 impl Default for Biquad {
     fn default() -> Self {
         Biquad::new()

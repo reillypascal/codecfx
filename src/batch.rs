@@ -9,7 +9,7 @@ use crate::cli::Args;
 use crate::codec::process_codec;
 use crate::wav::{read_file_as_wav, write_file_as_wav};
 
-pub fn process_batch(args: &Args, filter_params: &AudioFilterParameters, wav_spec: &WavSpec) {
+pub fn process_batch(args: &Args, filter_params: &AudioFilterParameters, wav_spec: &mut WavSpec) {
     WalkDir::new(&args.input)
         .into_iter()
         .filter_map(|entry| entry.ok())
@@ -27,7 +27,7 @@ pub fn process_batch(args: &Args, filter_params: &AudioFilterParameters, wav_spe
             // will both (try to) read the file and match the result, printing if there is an error
             match read_file_as_wav(entry.path()) {
                 Ok(file) => {
-                    input = file;
+                    (input, *wav_spec) = file;
                 }
                 Err(e) => {
                     eprintln!("Error reading {:?} as .WAV file: {}", entry.path(), e);

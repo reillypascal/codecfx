@@ -22,13 +22,13 @@ fn main() {
     // set up args, filter, wav spec
     let args = Args::parse();
     let filter_params = AudioFilterParameters::new(FilterAlgorithm::Hpf2, 20.0, 0.707, 0.0);
-    let wav_spec = WavSpec {
+    let mut wav_spec = WavSpec {
         channels: 1,
-        sample_rate: args.samplerate,
+        sample_rate: 44100,
         bits_per_sample: 16,
         sample_format: SampleFormat::Int,
     };
 
-    // get & process files 
-    process_batch(&args, &filter_params, &wav_spec);
+    // get & process files
+    process_batch(&args, &filter_params, &mut wav_spec);
 }
