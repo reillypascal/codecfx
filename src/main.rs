@@ -5,17 +5,17 @@ use clap::Parser;
 use hound::{SampleFormat, WavSpec};
 // use walkdir::WalkDir;
 
+use crate::batch::process_batch;
 use crate::biquad::{AudioFilterParameters, FilterAlgorithm};
 use crate::cli::Args;
 // use crate::codec::process_codec;
-use crate::walk_dir::walk_dir;
 // use crate::wav::{read_file_as_wav, write_file_as_wav};
 
+pub mod batch;
 pub mod biquad;
 pub mod cli;
 pub mod codec;
 pub mod vox;
-pub mod walk_dir;
 pub mod wav;
 
 fn main() {
@@ -30,5 +30,5 @@ fn main() {
     };
 
     // get & process files 
-    walk_dir(&args, &filter_params, &wav_spec);
+    process_batch(&args, &filter_params, &wav_spec);
 }

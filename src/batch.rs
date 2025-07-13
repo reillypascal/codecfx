@@ -9,7 +9,7 @@ use crate::cli::Args;
 use crate::codec::process_codec;
 use crate::wav::{read_file_as_wav, write_file_as_wav};
 
-pub fn walk_dir(args: &Args, filter_params: &AudioFilterParameters, wav_spec: &WavSpec) {
+pub fn process_batch(args: &Args, filter_params: &AudioFilterParameters, wav_spec: &WavSpec) {
     WalkDir::new(&args.input)
         .into_iter()
         .filter_map(|entry| entry.ok())
