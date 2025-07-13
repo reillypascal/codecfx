@@ -65,9 +65,9 @@ pub struct AudioFilter {
 }
 
 impl AudioFilter {
-    pub fn new(algorithm: FilterAlgorithm, fc: f64, q: f64, boost_cut_db: f64, sample_rate: u32) -> AudioFilter {
+    pub fn new(params: &AudioFilterParameters, sample_rate: u32) -> AudioFilter {
         AudioFilter {
-            parameters: AudioFilterParameters::new(algorithm, fc, q, boost_cut_db),
+            parameters: *params,
             biquad: Biquad::new(),
             sample_rate: sample_rate,
         }
@@ -77,8 +77,8 @@ impl AudioFilter {
         self.parameters // does this move?
     }
     
-    pub fn set_params(&mut self, params: AudioFilterParameters) {
-        self.parameters = params;
+    pub fn set_params(&mut self, params: &AudioFilterParameters) {
+        self.parameters = *params;
         
         if self.parameters.q <= 0.0 {
             self.parameters.q = 0.707;

@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use hound;
+use hound::{self, WavSpec};
 
 pub fn read_file_as_wav(path: &Path) -> Result<Vec<i16>, hound::Error> {
     // // reader
@@ -14,17 +14,9 @@ pub fn read_file_as_wav(path: &Path) -> Result<Vec<i16>, hound::Error> {
     Ok(input)
 }
 
-pub fn write_file_as_wav(data: &Vec<i16>, path: &PathBuf, sample_rate: &u32) -> Result<(), hound::Error> {
-    // spec
-    let spec = hound::WavSpec {
-        channels: 1,
-        sample_rate: *sample_rate,
-        bits_per_sample: 16,
-        sample_format: hound::SampleFormat::Int,
-    };
-    
+pub fn write_file_as_wav(data: &Vec<i16>, path: &PathBuf, spec: &WavSpec) -> Result<(), hound::Error> {
     // writer
-    let mut writer = hound::WavWriter::create(path, spec)?;//.expect("Could not create writer");
+    let mut writer = hound::WavWriter::create(path, *spec)?;//.expect("Could not create writer");
     for t in 0..data.len() {
         writer.write_sample(data[t])?;//.expect("Could not write sample");
     }
