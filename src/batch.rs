@@ -33,9 +33,13 @@ pub fn process_batch(args: &Args, filter_params: &AudioFilterParameters, wav_spe
                     eprintln!("Error reading {:?} as .WAV file: {}", entry.path(), e);
                 }
             };
+            // resample using spec sample rate and args.samplerate
 
             // apply codec
-            let mut output = process_codec(input, &args.format);
+            let mut output = process_codec(input, &args.codec);
+
+            // resample back to main rate
+
             // apply filter
             for sample in &mut output {
                 *sample = filter.process_sample(*sample as f64) as i16;

@@ -1,7 +1,10 @@
-use hound::{self, WavReader, WavSpec, WavWriter};
+use hound::{self, Sample, WavReader, WavSpec, WavWriter};
 use std::path::{Path, PathBuf};
 
-pub fn read_file_as_wav(path: &Path) -> Result<(Vec<i16>, WavSpec), hound::Error> {
+pub fn read_file_as_wav<T>(path: &Path) -> Result<(Vec<T>, WavSpec), hound::Error>
+where
+    T: Sample,
+{
     // // reader
     // let mut reader = hound::WavReader::open(path).expect("Error reading file");
     // // use reader
@@ -9,14 +12,17 @@ pub fn read_file_as_wav(path: &Path) -> Result<(Vec<i16>, WavSpec), hound::Error
     // ? operator is like match expression for Result
     let mut reader = WavReader::open(path)?;
     let input = reader
-        .samples::<i16>()
-        .collect::<Result<Vec<i16>, hound::Error>>()?;
+        .samples::<T>()
+        .collect::<Result<Vec<T>, hound::Error>>()?;
     let spec = reader.spec();
     // return
     Ok((input, spec))
 }
 // &[i16] instead of &Vec<i16> - https://rust-lang.github.io/rust-clippy/master/index.html#ptr_arg
-pub fn write_file_as_wav(data: &[i16], path: &PathBuf, spec: &WavSpec) -> Result<(), hound::Error> {
+pub fn write_file_as_wav<T>(data: &[T], path: &PathBuf, spec: &WavSpec) -> Result<(), hound::Error>
+where
+    T: Copy + Sample,
+{
     // writer
     let mut writer = WavWriter::create(path, *spec)?; //.expect("Could not create writer");
     for sample in data {

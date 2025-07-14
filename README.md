@@ -9,7 +9,7 @@ The code will default to expecting your input file(s) and/or folder(s) to be in 
   - `-i, --input`       subfolder in which to look for files to import (string)
   - `-o, --output`      subfolder in which to write .WAV files (string)
   - `-s, --samplerate`  sample rate for codec
-  - `-f, --format`      sample format in which to read the files (string: only 'vox' available for now; more to come)
+  - `-c, --codec`       codec through which to process the files (string: only 'vox' available for now; more to come)
 <!--
   reading/writing .WAV files (int)
 - `-S, --codec-sr`    sample rate for codec (int) -->
