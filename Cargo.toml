@@ -6,4 +6,5 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.40", features = ["derive"] }
 hound = "3.5.1"
+rubato = "0.16.2"
 walkdir = "2.5.0"

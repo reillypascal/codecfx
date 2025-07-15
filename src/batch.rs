@@ -36,7 +36,7 @@ pub fn process_batch(args: &Args, filter_params: &AudioFilterParameters, wav_spe
             // resample using spec sample rate and args.samplerate
 
             // apply codec
-            let mut output = process_codec(input, &args.codec);
+            let mut output = process_codec(input, args, wav_spec);
 
             // resample back to main rate
 
